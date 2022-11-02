@@ -17,29 +17,28 @@ library(shinymanager)
 # # PIN_FOLDER |> pin_write( KhatamDetail )
 # z
 
-KhatamDetail <- read_excel("Khatam.xlsx")
 
-Cover_Service <- read_excel("Cover_Service.xlsx")
-COVERAGE <- sort(unique(Cover_Service$CoverageName))
-SERVICE <- sort(unique(Cover_Service$ServiceGroupName))
 
-Age_Task <- c(COVERAGE[12:16], SERVICE[c(14, 130, 40, 5, 179, 4, 10)])
-Gender_Task <- c(COVERAGE[13], SERVICE[c(64, 167, 113)])
 
-Fraud_Task_Age <- read_excel("Fraud_Task.xlsx",
-                             sheet = "Age_Cover"
+
+PROVINCE <- read_excel("Liability_Franchise_Tariff.xlsx",
+  sheet = "Province"
 )
-Fraud_Task_Gender <- read_excel("Fraud_Task.xlsx",
-                                sheet = "Gender_Cover"
+NUMBER_ins <- read_excel("Liability_Franchise_Tariff.xlsx",
+  sheet = "number_ins"
+)
+JOBGROUP <- read_excel("Liability_Franchise_Tariff.xlsx",
+  sheet = "job_group"
 )
 
+#-------------------------------------------------------------------------------
 
-PROVINCE <- read_excel("D:/DataBaseApp/DayDataBase/Liability_Franchise_Tariff.xlsx", 
-                       sheet = "Province")
-NUMBER_ins <- read_excel("D:/DataBaseApp/DayDataBase/Liability_Franchise_Tariff.xlsx", 
-                         sheet = "number_ins")
-JOBGROUP <- read_excel("D:/DataBaseApp/DayDataBase/Liability_Franchise_Tariff.xlsx", 
-                       sheet = "job_group")
+# New Contract
+ostan = read_excel("Limits_farsi.xlsx" , sheet = "province")
+JobGroup = read_excel("Limits_farsi.xlsx" , sheet = "job_group")
+typeceiling = read_excel("Limits_farsi.xlsx" , sheet = "Type Ceiling")
+servicenetwork = read_excel("Limits_farsi.xlsx" , sheet = "Service network")
+
 
 button_color_css <- "
 #DivCompClear, #FinderClear, #EnterTimes{
@@ -77,1093 +76,672 @@ idleTimer();"
 
 
 # Define UI
-ui <- secure_app(head_auth = tags$script(inactivity),
-                 fluidPage(
-                     
-                     
-                     
-                     navbarPage("Day Health Report",
-                                inverse = TRUE,
-                                # theme = bs_theme(bootswatch = "minty"),
-                                theme = shinytheme("cerulean"),
-                                
-                                
-                                tabPanel("Data Extraction",
-                                         fluid = TRUE, icon = icon("chart-bar"),
-                                         tags$style(button_color_css),
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 titlePanel(""),
-                                                 shinythemes::themeSelector(),
-                                                 fluidRow(
-                                                     column(
-                                                         5,
-                                                         style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                         h4("Remittance Type", style = "color:mediumvioletred"),
-                                                         checkboxGroupInput(
-                                                             inputId = "RemittanceType",
-                                                             label = "",
-                                                             choices = unique(KhatamDetail$RemittanceType),
-                                                             selected = unique(KhatamDetail$RemittanceType)[1]
-                                                         )
-                                                     ),
-                                                     column(4,
-                                                            offset = 2,
-                                                            style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                            h4("Deduction Cause", style = "color:mediumvioletred"),
-                                                            selectInput(
-                                                                inputId = "elatkosor",
-                                                                label = "",
-                                                                choices = unique(KhatamDetail$Deduction_Cause),
-                                                                selected = unique(KhatamDetail$Deduction_Cause)[4],
-                                                                multiple = TRUE
-                                                            )
-                                                     )
-                                                 ),
-                                                 hr(),
-                                                 fluidRow(column(
-                                                     12,
-                                                     h4("Age", style = "color:mediumvioletred"),
-                                                     sliderInput(
-                                                         inputId = "Age",
-                                                         label = "",
-                                                         min = min(KhatamDetail$Age), max = max(KhatamDetail$Age),
-                                                         value = c(10, 55), step = 1
-                                                     )
-                                                 )),
-                                                 hr(),
-                                                 fluidRow(
-                                                     column(12,
-                                                            style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                            h4("Coverage", style = "color:mediumvioletred"),
-                                                            selectInput(
-                                                                inputId = "Coverage",
-                                                                label = "",
-                                                                choices = unique(KhatamDetail$CoverageName),
-                                                                selected = unique(KhatamDetail$CoverageName)[1],
-                                                                multiple = TRUE,
-                                                                width = "420px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 hr(),
-                                                 fluidRow(
-                                                     column(12,
-                                                            style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                            h4("City", style = "color:mediumvioletred"),
-                                                            selectInput(
-                                                                inputId = "City",
-                                                                label = "",
-                                                                choices = unique(KhatamDetail$City),
-                                                                selected = unique(KhatamDetail$City)[1],
-                                                                multiple = TRUE,
-                                                                width = "420px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 hr(),
-                                                 h4("Event Date", style = "color:mediumvioletred"),
-                                                 # Set Time Range
-                                                 fluidRow(
-                                                     column(
-                                                         5,
-                                                         textInput(
-                                                             inputId = "TimeStart",
-                                                             label = "From:",
-                                                             value = min(KhatamDetail$EventDate),
-                                                             width = "150px"
-                                                         )
-                                                     ),
-                                                     column(5,
-                                                            ofset = 3,
-                                                            textInput(
-                                                                inputId = "TimeEnd",
-                                                                label = "To:",
-                                                                value = max(KhatamDetail$EventDate),
-                                                                width = "150px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 helpText("Format example: 1399/12/11 to 1400/02/07 "),
-                                                 hr(),
-                                                 h4("Request Amount", style = "color:mediumvioletred"),
-                                                 fluidRow(
-                                                     column(
-                                                         5,
-                                                         textInput(
-                                                             inputId = "MinRequestAmount",
-                                                             label = "Min(Million Rial):",
-                                                             value = 0,
-                                                             width = "300px"
-                                                         )
-                                                     ),
-                                                     column(5,
-                                                            ofset = 3,
-                                                            textInput(
-                                                                inputId = "MaxRequestAmount",
-                                                                label = "Max(Million Rial):",
-                                                                value = round(max(KhatamDetail$RequestAmount) / 10^3),
-                                                                width = "300px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 hr(),
-                                                 h4("Which Columns do you want?", style = "color:mediumvioletred"),
-                                                 selectInput(
-                                                     inputId = "COLUMNS",
-                                                     label = "",
-                                                     choices = names(KhatamDetail),
-                                                     selected = names(KhatamDetail),
-                                                     multiple = TRUE,
-                                                     width = "420px"
-                                                 ),
-                                                 actionButton("run", "apply", class = "btn-info")
-                                             ),
-                                             mainPanel(
-                                                 
-                                                 
-                                                 column(dataTableOutput(outputId = "Statistics_report"),
-                                                        width = 12,
-                                                        style = "font-family: B Mitra;font-size: 15px;font-weight: bold"
-                                                 )
-                                             )
-                                         ),
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 titlePanel(""),
-                                                 h2("Only filter by Code Meli", style = "color:steelblue"),
-                                                 h4("Code Meli", style = "color:mediumvioletred"),
-                                                 textInput(
-                                                     inputId = "CodeMeli",
-                                                     label = "",
-                                                     value = "",
-                                                     width = "250px"
-                                                 ),
-                                                 hr(),
-                                                 h4("Code Meli Asli", style = "color:mediumvioletred"),
-                                                 textInput(
-                                                     inputId = "CodeMeliAsli",
-                                                     label = "",
-                                                     value = "",
-                                                     width = "250px"
-                                                 )
-                                             ),
-                                             mainPanel(
-                                                 
-                                                 hr(),
-                                                 withSpinner( dataTableOutput(outputId = "Statistics_report_CodeMeli"))
-                                             )
-                                         ),
-                                         hr(),
-                                         p(em("Developed by"), br(),
-                                           a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                           style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                         )
-                                ),
-                                
-                                #-------------------------------------------------------------------------------  
-                                #------------------------------------------------------------------------------- 
-                                #------------------------------------------------------------------------------- 
-                                
-                                
-                                tabPanel("Statistics",
-                                         fluid = TRUE, icon = icon("chart-pie"),
-                                         tags$style(button_color_css),
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 # titlePanel("Desired Program Characteristics"),
-                                                 shinythemes::themeSelector(),
-                                                 h4("Choosing the covers for which you want the criteria be calculated", style = "color:seagreen"),
-                                                 fluidRow(
-                                                     column(
-                                                         5,
-                                                         textInput(
-                                                             inputId = "STATISTIC_COVERAGE_TimeStart",
-                                                             label = "From:",
-                                                             value = min(KhatamDetail$EventDate),
-                                                             width = "150px"
-                                                         )
-                                                     ),
-                                                     column(5,
-                                                            ofset = 3,
-                                                            textInput(
-                                                                inputId = "STATISTIC_COVERAGE_TimeEnd",
-                                                                label = "To:",
-                                                                value = max(KhatamDetail$EventDate),
-                                                                width = "150px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 column( 12,
-                                                         style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                         
-                                                         h4("Coverage", style = "color:seagreen"),
-                                                         checkboxGroupInput(
-                                                             inputId = "STATISTIC_COVERAGE",
-                                                             label = "",
-                                                             choices = unique(KhatamDetail$CoverageName),
-                                                             selected = unique(KhatamDetail$CoverageName),
-                                                             inline = FALSE
-                                                         )
-                                                 ),
-                                                 
-                                                 h4("Statistics Plot", style = "color:seagreen"),
-                                                 selectInput(
-                                                     inputId = "STATISTICS_Coverage_CRITERIA",
-                                                     label = "",
-                                                     choices = c(
-                                                         "sum request amount" = "SUM_req",
-                                                         "sum payable amount" = "SUM_Pay",
-                                                         "mean request amount" = "Mean_req",
-                                                         "mean payable amount" = "Mean_pay",
-                                                         "count" = "N"
-                                                     )
-                                                 ),
-                                                 actionButton("RUN_STATISTICS_COVERAGE", "apply", class = "btn-primary btn-lg")
-                                             ),
-                                             mainPanel(
-                                                 withSpinner(plotOutput(outputId = "STATISTICS_Coverage_plot")),
-                                                 downloadButton("downloadData_STATISTICS_COVERAGE_DATA", "Download"),
-                                                 hr(),
-                                                 column( 12,
-                                                         style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                         withSpinner(dataTableOutput(outputId = "STATISTICS_COVERAGE_DATA")) )
-                                             )
-                                         ),
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 h4("Choosing the Services for which you want the criteria be calculated", style = "color:red"),
-                                                 fluidRow(
-                                                     column(
-                                                         5,
-                                                         textInput(
-                                                             inputId = "STATISTIC_Services_TimeStart",
-                                                             label = "From:",
-                                                             value = min(KhatamDetail$EventDate),
-                                                             width = "150px"
-                                                         )
-                                                     ),
-                                                     column(5,
-                                                            ofset = 3,
-                                                            textInput(
-                                                                inputId = "STATISTIC_Services_TimeEnd",
-                                                                label = "To:",
-                                                                value = max(KhatamDetail$EventDate),
-                                                                width = "150px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 column(12,
-                                                        style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                        
-                                                        h4("Service", style = "color:red"),
-                                                        selectInput(
-                                                            inputId = "STATISTICS_Service",
-                                                            label = "",
-                                                            choices = c("All Services", unique(KhatamDetail$ServiceGroupName)),
-                                                            selected = c("All Services", unique(KhatamDetail$ServiceGroupName))[1],
-                                                            multiple = TRUE
-                                                        )
-                                                        
-                                                 ),
-                                                 
-                                                 h4("Statistics Plot", style = "color:red"),
-                                                 selectInput(
-                                                     inputId = "STATISTICS_Services_CRITERIA",
-                                                     label = "",
-                                                     choices = c(
-                                                         "sum request amount" = "SUM_req",
-                                                         "sum payable amount" = "SUM_Pay",
-                                                         "mean request amount" = "Mean_req",
-                                                         "mean payable amount" = "Mean_pay",
-                                                         "count" = "N"
-                                                     )
-                                                 ),
-                                                 actionButton("RUN_STATISTICS_Services", "apply", class = "btn-primary btn-lg")
-                                             ),
-                                             mainPanel(
-                                                 withSpinner( plotOutput(outputId = "STATISTICS_Services_plot") ),
-                                                 downloadButton("downloadData_STATISTICS_Services_DATA", "Download"),
-                                                 hr(),
-                                                 fluidRow( 
-                                                     
-                                                     
-                                                     column( withSpinner( dataTableOutput(outputId = "STATISTICS_SERVICE_DATA") ),
-                                                             width = 12,
-                                                             style = "font-family: B Mitra;font-size: 15px;font-weight: bold") 
-                                                     
-                                                     
-                                                 )
-                                             )
-                                         )
-                                ),
-                                
-                                
-                                #-------------------------------------------------------------------------------  
-                                #------------------------------------------------------------------------------- 
-                                #------------------------------------------------------------------------------- 
-                                
-                                navbarMenu("Fraud Detection",
-                                           icon = icon("swimmer"),
-                                           tabPanel("people who have the most damage",
-                                                    fluid = TRUE, icon = icon("area-chart", verify_fa = FALSE),
-                                                    shinythemes::themeSelector(),
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            
-                                                            # titlePanel("The number of losses in a certain period of time"),
-                                                            h3("The number of losses in a certain period of time", style = "color:midnightblue"),
-                                                            hr(),
-                                                            shinythemes::themeSelector(),
-                                                            h4("People who have the most loss", style = "color:darkred"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    3,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab1_1",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "150px"
-                                                                    )
-                                                                ),
-                                                                column(3,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab1_1",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(3,
-                                                                       ofset = 3,
-                                                                       textInput(
-                                                                           inputId = "N_Fraud_1",
-                                                                           label = "Number of loss:",
-                                                                           value = 50,
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(3,
-                                                                       ofset = 3,
-                                                                       selectInput(
-                                                                           inputId = "L_or_P_Fraud_1",
-                                                                           label = "Num or Severity",
-                                                                           choices = c("Number" = "N", "Severity" = "SUM_req"),
-                                                                           selected = "Number",
-                                                                           width = "420px"
-                                                                       )
-                                                                )
-                                                            ),
-                                                            actionButton("run_Fraud_tab1_1", "apply", class = "btn-info")
-                                                        ),
-                                                        mainPanel(
-                                                            h2("Here the results are displayed based on the Desired Program Characteristics", style = "color:mediumvioletred"),
-                                                            hr(),
-                                                            downloadButton("downloadDataFraud_tab1_1", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab1_Data_report_1") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold") 
-                                                        )
-                                                    ),
-                                                    #-------------------------------------------------------------------------------       
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("People who have the most loss in special coverages", style = "color:darkred"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    4,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab1_2",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "150px"
-                                                                    )
-                                                                ),
-                                                                column(4,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab1_2",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(4,
-                                                                       ofset = 3,
-                                                                       textInput(
-                                                                           inputId = "N_Fraud_2",
-                                                                           label = "Number of loss:",
-                                                                           value = 50,
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    8,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                                    selectInput(
-                                                                        inputId = "Coverage_Fraud_tab1_2",
-                                                                        label = "",
-                                                                        choices = unique(KhatamDetail$CoverageName),
-                                                                        selected = unique(KhatamDetail$CoverageName)[1],
-                                                                        multiple = TRUE,
-                                                                        width = "420px"
-                                                                    )
-                                                                ),
-                                                                column(
-                                                                    4,
-                                                                    selectInput(
-                                                                        inputId = "L_or_P_Fraud_2",
-                                                                        label = "Num or Severity",
-                                                                        choices = c("Number" = "N", "Severity" = "SUM_req"),
-                                                                        selected = "Number",
-                                                                        width = "420px"
-                                                                    )
-                                                                )
-                                                            ),
-                                                            actionButton("run_Fraud_tab1_2", "apply", class = "btn-info")
-                                                        ),
-                                                        mainPanel(
-                                                            hr(),
-                                                            downloadButton("downloadDataFraud_tab1_2", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab1_Data_report_2") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold") 
-                                                        )
-                                                    ),
-                                                    #-------------------------------------------------------------------------------       
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("People who have the most loss in special services", style = "color:darkred"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    4,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab1_3",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "150px"
-                                                                    )
-                                                                ),
-                                                                column(4,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab1_3",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(4,
-                                                                       ofset = 3,
-                                                                       textInput(
-                                                                           inputId = "N_Fraud_3",
-                                                                           label = "Number of loss:",
-                                                                           value = 50,
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    8,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                                    selectInput(
-                                                                        inputId = "Coverage_Fraud_tab1_3",
-                                                                        label = "",
-                                                                        choices = unique(KhatamDetail$ServiceGroupName),
-                                                                        selected = unique(KhatamDetail$ServiceGroupName)[1],
-                                                                        multiple = TRUE,
-                                                                        width = "420px"
-                                                                    )
-                                                                ),
-                                                                column(
-                                                                    4,
-                                                                    selectInput(
-                                                                        inputId = "L_or_P_Fraud_3",
-                                                                        label = "Num or Severity",
-                                                                        choices = c("Number" = "N", "Severity" = "SUM_req"),
-                                                                        selected = "Number",
-                                                                        width = "420px"
-                                                                    )
-                                                                )
-                                                            ),
-                                                            actionButton("run_Fraud_tab1_3", "apply", class = "btn-info")
-                                                        ),
-                                                        mainPanel(
-                                                            hr(),
-                                                            downloadButton("downloadDataFraud_tab1_3", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab1_Data_report_3") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold") 
-                                                        )
-                                                    ),
-                                                    hr(),
-                                                    p(em("Developed by"), br(),
-                                                      a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                                      style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                                    )
-                                           ),
-                                           tabPanel("Age | Gender and Cover contradiction",
-                                                    fluid = TRUE, icon = icon("stopwatch"),
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("Age and Cover contradiction", style = "color:mediumvioletred"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    6,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab2_1",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "150px"
-                                                                    )
-                                                                ),
-                                                                column(6,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab2_1",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                                    checkboxGroupInput(
-                                                                        inputId = "Coverage_Fraud_tab2_1",
-                                                                        label = "",
-                                                                        choices = Fraud_Task_Age$V,
-                                                                        selected = Fraud_Task_Age$V[1],
-                                                                        inline = FALSE,
-                                                                        width = "420px"
-                                                                    )
-                                                                ),
-                                                                actionButton("run_Fraud_tab2_1", "apply", class = "btn-info")
-                                                            )
-                                                        ),
-                                                        mainPanel(
-                                                            hr(),
-                                                            downloadButton("downloadDataFraud_tab2_1", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab2_Data_report_1") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold") 
-                                                        )
-                                                    ),
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("Gender and Cover contradiction", style = "color:mediumvioletred"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    6,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab2_2",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "150px"
-                                                                    )
-                                                                ),
-                                                                column(6,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab2_2",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "150px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                                    checkboxGroupInput(
-                                                                        inputId = "Coverage_Fraud_tab2_2",
-                                                                        label = "",
-                                                                        choices = Fraud_Task_Gender$W,
-                                                                        selected = Fraud_Task_Gender$W[1],
-                                                                        inline = FALSE,
-                                                                        width = "420px"
-                                                                    )
-                                                                ),
-                                                                actionButton("run_Fraud_tab2_2", "apply", class = "btn-info")
-                                                            )
-                                                        ),
-                                                        mainPanel(
-                                                            hr(),
-                                                            downloadButton("downloadDataFraud_tab2_2", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab2_Data_report_2") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold")
-                                                        )
-                                                    ),
-                                                    hr(),
-                                                    p(em("Developed by"), br(),
-                                                      a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                                      style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                                    )
-                                           ),
-                                           tabPanel("Unconventional hospitalization cost insured over a period of time",
-                                                    fluid = TRUE, icon = icon("exclamation-triangle", verify_fa = FALSE),
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("Unconventional hospitalization cost by coverage", style = "color:deeppink"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    6,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab4_1",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "350px"
-                                                                    )
-                                                                ),
-                                                                column(6,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab4_1",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "350px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    sliderInput(
-                                                                        inputId = "SD_Fraud_1",
-                                                                        label = "SD:",
-                                                                        min = .5, max = 10,
-                                                                        step = .5,
-                                                                        value = 3
-                                                                    )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                                    selectInput(
-                                                                        inputId = "Coverage_Fraud_tab4_1",
-                                                                        label = "Coverage",
-                                                                        choices = unique(KhatamDetail$CoverageName),
-                                                                        selected = unique(KhatamDetail$CoverageName)[1],
-                                                                        multiple = TRUE,
-                                                                        width = "420px"
-                                                                    )
-                                                                )
-                                                            ),
-                                                            actionButton("run_Fraud_tab4_1", "apply", class = "btn-info")
-                                                        ),
-                                                        mainPanel(
-                                                            
-                                                            downloadButton("downloadDataFraud_tab4_1", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab4_Data_report_1") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold")
-                                                        )
-                                                    ),
-                                                    #* ------------------------------------------------------------------------------
-                                                    sidebarLayout(
-                                                        sidebarPanel(
-                                                            h4("Unconventional hospitalization cost by Service", style = "color:deeppink"),
-                                                            br(),
-                                                            fluidRow(
-                                                                column(
-                                                                    6,
-                                                                    textInput(
-                                                                        inputId = "TimeStart_Fraud_tab4_2",
-                                                                        label = "From Date:",
-                                                                        value = min((KhatamDetail$EventDate)),
-                                                                        width = "350px"
-                                                                    )
-                                                                ),
-                                                                column(6,
-                                                                       ofset = 2,
-                                                                       textInput(
-                                                                           inputId = "TimeEnd_Fraud_tab4_2",
-                                                                           label = "To Date:",
-                                                                           value = max(KhatamDetail$EventDate),
-                                                                           width = "350px"
-                                                                       )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    sliderInput(
-                                                                        inputId = "SD_Fraud_2",
-                                                                        label = "SD:",
-                                                                        min = .5, max = 10,
-                                                                        step = .5,
-                                                                        value = 3
-                                                                    )
-                                                                ),
-                                                                column(
-                                                                    12,
-                                                                    style = "font-family: B Mitra;font-size: 20px;font-weight: bold",
-                                                                    selectInput(
-                                                                        inputId = "Service_Fraud_tab4_2",
-                                                                        label = "Service",
-                                                                        choices = unique(KhatamDetail$ServiceGroupName),
-                                                                        selected = unique(KhatamDetail$ServiceGroupName)[1],
-                                                                        multiple = TRUE,
-                                                                        width = "420px"
-                                                                    )
-                                                                )
-                                                            ),
-                                                            actionButton("run_Fraud_tab4_2", "apply", class = "btn-info")
-                                                        ),
-                                                        mainPanel(
-                                                            
-                                                            downloadButton("downloadDataFraud_tab4_2", "Download"),
-                                                            hr(),
-                                                            column( withSpinner( dataTableOutput(outputId = "Fraud_tab4_Data_report_2") ),
-                                                                    width = 12,
-                                                                    style = "font-family: B Mitra;font-size: 15px;font-weight: bold")
-                                                        )
-                                                    ),
-                                                    hr(),
-                                                    p(em("Developed by"), br(),
-                                                      a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                                      style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                                    )
-                                           )
-                                ),
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                
-                                tabPanel("Forecast and Predict",
-                                         fluid = TRUE, icon = icon("line-chart", verify_fa = FALSE),
-                                         tags$style(button_color_css),
-                                         shinythemes::themeSelector(),
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 h4("Forecasting losses (Test)", style = "color:deeppink"),
-                                                 br(),
-                                                 fluidRow(
-                                                     column(
-                                                         7,
-                                                         numericInput(
-                                                             inputId = "TimeSeries_month",
-                                                             label = "",
-                                                             min = 1,
-                                                             max = 5,
-                                                             value = 3,
-                                                             width = "350px"
-                                                         )
-                                                     ),
-                                                     column(7,
-                                                            ofset = 2,
-                                                            selectInput(
-                                                                inputId = "TimeSeries_Model",
-                                                                label = "",
-                                                                choices = c("GLMnet", "Random Forest", "Prophet XGboost"),
-                                                                selected = "GLMnet",
-                                                                width = "350px"
-                                                            )
-                                                     ),
-                                                     column(
-                                                         9,
-                                                         actionButton("run_Time_Series", "apply", class = "btn-info")
-                                                     )
-                                                 )
-                                             ),
-                                             mainPanel(
-                                                 
-                                                 # withSpinner(  plotlyOutput(outputId = "TimeSeries_plot_Test")),
-                                                 withSpinner(plotlyOutput(outputId = "TimeSeries_plot_forecast"))
-                                             )
-                                         ),
-                                         #+-------------------------------------------------------------------------
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 h4("Forecasting losses for the next few months", style = "color:deeppink"),
-                                                 br(),
-                                                 fluidRow(
-                                                     column(
-                                                         7,
-                                                         numericInput(
-                                                             inputId = "TimeSeries_month_predict",
-                                                             label = "",
-                                                             min = 1,
-                                                             max = 24,
-                                                             value = 3,
-                                                             width = "350px"
-                                                         )
-                                                     ),
-                                                     column(7,
-                                                            ofset = 2,
-                                                            selectInput(
-                                                                inputId = "TimeSeries_Model_predict",
-                                                                label = "",
-                                                                choices = c("GLMnet", "Random Forest", "Prophet XGboost"),
-                                                                selected = "GLMnet",
-                                                                width = "350px"
-                                                            )
-                                                     )
-                                                 ),
-                                                 column(
-                                                     9,
-                                                     actionButton("run_Time_Series_predict", "apply", class = "btn-info")
-                                                 ),
-                                                 column(
-                                                     3,
-                                                     downloadButton("downloadDataTimeSeries", "Download")
-                                                 ),
-                                                 br(),
-                                                 hr(),
-                                                 br(),
-                                                 column(
-                                                     12,
-                                                     withSpinner(dataTableOutput(outputId = "TimeSeries_data_forecast"))
-                                                 )
-                                             ),
-                                             mainPanel(
-                                                 hr(),
-                                                 withSpinner(plotlyOutput(outputId = "TimeSeries_plot_predict"))
-                                             )
-                                         ),
-                                         hr(),
-                                         p(em("Developed by"), br(),
-                                           a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                           style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                         )
-                                ),
-                                
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                
-                                tabPanel("Premium Calculate",
-                                         fluid = TRUE, icon = icon("umbrella", verify_fa = FALSE),
-                                         tags$style(button_color_css),
-                                         
-                                         shinythemes::themeSelector(),
-                                         
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 h4("", style = "color:deeppink"),
-                                                 br(),
-                                                 fluidRow(
-                                                     
-                                                     fileInput(
-                                                         'fileCOVERAGES',
-                                                         h4('Upload Excel File',style="font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:right"),
-                                                         accept = '.xlsx'
-                                                     ) ,
-                                                     
-                                                     column(
-                                                         6,
-                                                         numericInput(
-                                                             inputId = "N_person",
-                                                             label = "Number of persons",
-                                                             min = 5,
-                                                             max = 1000000,
-                                                             value = 120,
-                                                             width = "350px"
-                                                         )
-                                                     ),
-                                                     column(6,
-                                                            ofset = 2,
-                                                            numericInput(
-                                                                inputId = "DevCoef",
-                                                                label = "Development Coeffecient",
-                                                                min = 1 ,max = 2 ,value = round( 13/11, 2 ),
-                                                                width = "350px"
-                                                            )
-                                                     ),
-                                                     column(12,
-                                                            ofset = 2,
-                                                            sliderInput(
-                                                                inputId = "Interest",
-                                                                label = "Interest Rate",
-                                                                min = .01 ,max = .99 ,value = .12,step = .01,
-                                                                width = "650px"
-                                                            )
-                                                     ),
-                                                     column(6,
-                                                            ofset = 2,
-                                                            selectInput(
-                                                                inputId = "ProvinceDis",
-                                                                label = "Province Discount",
-                                                                choices = PROVINCE$province,
-                                                                selected = PROVINCE$province[26]
-                                                            )
-                                                     ),
-                                                     column(6,
-                                                            ofset = 2,
-                                                            selectInput(
-                                                                inputId = "JobDis",
-                                                                label = "Job Group Discount",
-                                                                choices = JOBGROUP$JOB_GROUP,
-                                                                selected = JOBGROUP$JOB_GROUP[2]
-                                                            )
-                                                     ),
-                                                     column(12,
-                                                            ofset = 2,
-                                                            sliderInput(
-                                                                inputId = "DiscountRate",
-                                                                label = "Discount",
-                                                                min = 0 ,max = .99 ,value = 0,step = .01,
-                                                                width = "650px"
-                                                            )
-                                                     ),
-                                                     
-                                                     column(
-                                                         9,
-                                                         actionButton("run_PremiumCalc", "apply", class = "btn-info")
-                                                     ),
-                                                     column(
-                                                         12,style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                         withSpinner(dataTableOutput(outputId = "Yearly_Premium_Data"))
-                                                     )
-                                                 )
-                                                 
-                                             ),
-                                             mainPanel(
-                                                 hr(),
-                                                 column(
-                                                     12,
-                                                     withSpinner(dataTableOutput(outputId = "Premium_Cove_Data")),
-                                                     style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                 )
-                                             )
-                                         ),
-                                         
-                                         
-                                         hr(),
-                                         p(em("Developed by"), br(),
-                                           a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                           style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                         )
-                                ),
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                
-                                tabPanel("Claims Reserving",
-                                         fluid = TRUE, icon = icon("calendar", verify_fa = FALSE),
-                                         tags$style(button_color_css),
-                                         
-                                         shinythemes::themeSelector(),
-                                         
-                                         sidebarLayout(
-                                             sidebarPanel(
-                                                 h4("", style = "color:deeppink"),
-                                                 br(),
-                                                 fluidRow(
-                                                     
-                                                     fileInput(
-                                                         'fileIBNR',
-                                                         h4('Upload Excel File',style="font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:right"),
-                                                         accept = '.xlsx'
-                                                     ) ,
-                                                     
-                                                     
-                                                     column(
-                                                         6,
-                                                         selectInput(
-                                                             inputId = "IBNR_Method",
-                                                             label = "Method",
-                                                             choices = c("Mack","log-linear"),
-                                                             selected = "Mack",
-                                                             width = "350px"
-                                                         )
-                                                     ),
-                                                     
-                                                     
-                                                     column(
-                                                         9,
-                                                         actionButton("run_IBNR", "apply", class = "btn-info")
-                                                     )
-                                                 )
-                                                 
-                                             ),
-                                             mainPanel(
-                                                 
-                                                 hr(),
-                                                 column(
-                                                     12,
-                                                     withSpinner(dataTableOutput(outputId = "Full_Triangle")),
-                                                     style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                                 )
-                                             )
-                                         ),
-                                         
-                                         column(
-                                             12,
-                                             withSpinner(plotOutput(outputId = "Plot_Full_Triangle")),
-                                             style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
-                                         ),
-                                         
-                                         hr(),
-                                         p(em("Developed by"), br(),
-                                           a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                           style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
-                                         )
-                                ),
-                                
-                                
-                                
-                                
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                #-------------------------------------------------------------------------------
-                                
-                                tabPanel("Other Apps",
-                                         fluid = TRUE, icon = icon("tachometer", verify_fa = FALSE),
-                                         tags$style(button_color_css),
-                                         br(),
-                                         br(),
-                                         br(),
-                                         fluidRow(
-                                             column(
-                                                 width = 4,
-                                                 p("(ط¯ط§ط´ط¨ظˆط±ط¯ ظ…ط¯ظ„â€Œظ‡ط§غŒ غŒط§ط¯ع¯غŒط±غŒ ظ…ط§ط´غŒظ†(ظ‡ظˆط´ ظ…طµظ†ظˆط¹غŒ", br(),
-                                                   actionButton(
-                                                       inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
-                                                       icon = icon("brain"),
-                                                       onclick = "window.open('https://budgetrealizationdayinsurance.shinyapps.io/Model_Predictive/', '_blank')"
-                                                   ),
-                                                   style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:turquoise;padding:15px;border-radius:10px"
-                                                 )
-                                             ),
-                                             column(
-                                                 width = 4,
-                                                 p("ط¯ط§ط´ط¨ظˆط±ط¯ طھط­ظ‚ظ‚ ط¨ظˆط¯ط¬ظ‡", br(),
-                                                   actionButton(
-                                                       inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
-                                                       icon = icon("coins"),
-                                                       onclick = "window.open('https://gitypardazesh.shinyapps.io/Gity_Budget_Dashboard/', '_blank')"
-                                                   ),
-                                                   style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:thistle;padding:15px;border-radius:10px"
-                                                 )
-                                             ),
-                                             column(
-                                                 width = 4,
-                                                 p("ط¯ط§ط´ط¨ظˆط±ط¯ ظ…ط­ط§ط³ط¨ظ‡ ط­ظ‚ ط¨غŒظ…ظ‡ ط¯ط±ظ…ط§ظ† ط³ط§ط²ظ…ط§ظ† ط®ط¯ظ…ط§طھغŒ", br(),
-                                                   actionButton(
-                                                       inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
-                                                       icon = icon("hospital-user"),
-                                                       onclick = "window.open('https://abbasdidar5017.shinyapps.io/RATING_DASHBOARD3/', '_blank')"
-                                                   ),
-                                                   style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:turquoise;padding:15px;border-radius:10px"
-                                                 )
-                                             )
-                                         ),
-                                         hr(),
-                                         p(em("Developed by"), br(),
-                                           a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
-                                           style = "text-align:center; color:turquoise; font-size: 20px; font-family: times"
-                                         )
-                                )
+ui <- secure_app(
+  head_auth = tags$script(inactivity),
+  fluidPage(
+    navbarPage("",
+      inverse = TRUE,
+      # theme = bs_theme(bootswatch = "minty"),
+      theme = shinytheme("cerulean"),
+
+      #-------------------------------------------------------------------------------
+      #----------------------New Contract Premium Calculate-----------------------
+      #-------------------------------------------------------------------------------
+
+      tabPanel("New Contract Premium Calculate",
+               fluid = TRUE, icon = icon("umbrella", verify_fa = FALSE),
+               tags$style(button_color_css),
+               shinythemes::themeSelector(),
+               sidebarLayout(
+                 sidebarPanel(
+                   h4("", style = "color:deeppink"),
+                   br(),
+           
+                   fluidRow(
+                     column(
+                       6,
+                       numericInput(
+                         inputId = "N_Total_insured",
+                         label = "تعداد بیمه شده",
+                         min = 5,
+                         max = 1000000,
+                         value = 500,
+                         width = "350px"
+                       ),
+                       style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(6,
+                            ofset = 2,
+                            selectInput(
+                              inputId = "New_Province",
+                              label = "استان",
+                              choices =  sort( ostan$province ),
+                              selected = ostan$province[10]
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(12,
+                            ofset = 2,
+                            sliderInput(
+                              inputId = "Mean_Age",
+                              label = "میانگین سن",
+                              min = 0, max = 80, value = 45, step = 1,
+                              width = "650px"
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(6,
+                            ofset = 2,
+                            numericInput(
+                              inputId = "N_insured_60_70",
+                              label = "تعداد افراد بین 60 تا 70 سال",
+                              min = 5,
+                              max = 1000000,
+                              value = 200,
+                              width = "350px"
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(6,
+                            ofset = 2,
+                            numericInput(
+                              inputId = "N_insured_70",
+                              label = "تعداد افراد بیشتر از 70 سال",
+                              min = 5,
+                              max = 1000000,
+                              value = 100,
+                              width = "350px"
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(12,
+                            ofset = 2,
+                            selectInput(
+                              inputId = "Service_network",
+                              label = "شبکه ارائه خدمات",
+                              choices =  sort( servicenetwork$ServiceNetwork ),
+                              selected = servicenetwork$ServiceNetwork[2]
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(6,
+                            ofset = 2,
+                            selectInput(
+                              inputId = "NewJob_group",
+                              label = "گروه شغلی",
+                              choices = JobGroup$JOB_GROUP ,
+                              selected = JobGroup$JOB_GROUP[4]
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(6,
+                            ofset = 2,
+                            selectInput(
+                              inputId = "Type_ceiling",
+                              label = "نوع سقف",
+                              choices =  sort( typeceiling$TYPE_CEILING ),
+                              selected = sort( typeceiling$TYPE_CEILING )[1]
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     column(12,
+                            ofset = 2,
+                            sliderInput(
+                              inputId = "NewDiscountRate",
+                              label = "تخفیف نهایی",
+                              min = 0, max = .50, value = 0, step = .01,
+                              width = "650px"
+                            ),
+                            style = "color:darkred; font-family: B Mitra; font-size: 15px;text-align:center"
+                     ),
+                     # column(
+                     #   9,
+                     #   actionButton("run_New_PremiumCalc", "apply", class = "btn-info")
+                     # ),
+                     column(
+                       12,
+                       style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
+
+
+                       dataTableOutput(outputId = "Yearly_New_Premium_Data")
                      )
-                 )
+                   )
+                 ),
+                 mainPanel(
+                   
                  
+                   
+                   h1("تعیین سقف پوشش - میلیون ریال", style ="color:purple; font-family: B Mitra; font-size: 35px; text-align:center"),
+                   hr(),
+                   br(),
+                   
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "bastari",
+                            label = "بستری",
+                            value = 500 
+                          ),
+                          
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "j_takhasosi",
+                            label = "جراحی تخصصی",
+                            value = 1000 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "zayeman",
+                            label = "زایمان",
+                            value = 75 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "para",
+                            label ="پاراکلینیکی",
+                            value = 100 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+       
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "kh_az",
+                            label = "خدمات آزمایشگاهی",
+                            value = 80 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "dandan",
+                            label =  "دندانپزشکی",
+                            value = 100 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "eynak",
+                            label = "عینك طبی و لنز" ,
+                            value = 10 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "samak",
+                            label = "سمعك" , 
+                            value = 40 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+                   
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "sarpa",
+                            label = "اعمال مجاز سرپایی" , 
+                            value = 100 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "visit",
+                            label =  "ویزیت، دارو و خدمات اورژانس" ,
+                            value = 100 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "badan",
+                            label = "تهیه اعضای طبیعی بدن" , 
+                            value = 500 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          numericInput(
+                            inputId = "erotez",
+                            label =  "اروتز" ,
+                            value = 20 
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+                   #----------------------------------------------------------------------------------------------
+               
+                   h1("تعیین فرانشیز پوشش‌ها", style ="color:purple; font-family: B Mitra; font-size: 35px; text-align:center"),
+                   hr(),
+                   br(),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_bastari",
+                            label ="بستری",
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_j_takhasosi",
+                            label = "جراحی تخصصی",
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_zayeman",
+                            label =  "زایمان" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_para",
+                            label =  "پاراکلینیکی" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+                   
+                   
+                 
+              
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_kh_az",
+                            label =  "خدمات آزمایشگاهی" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_dandan",
+                            label = "دندانپزشکی" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_eynak",
+                            label =  "عینك طبی و لنز" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_samak",
+                            label = "سمعك" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+            
+                   
+                   
+ 
+                   
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_sarpa",
+                            label =  "اعمال مجاز سرپایی" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_visit",
+                            label = "ویزیت، دارو و خدمات اورژانس" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "f_badan",
+                            label ="تهیه اعضای طبیعی بدن" , 
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   column(3,
+                          ofset = 2,
+                          sliderInput(
+                            inputId = "erotez",
+                            label =  "اروتز" ,
+                            min = 0,
+                            max = .5,
+                            value = .1,
+                            step = .1
+                          ),
+                          style = "font-family: B Mitra; font-size: 15px;text-align:center"
+                   ),
+                   
+                   
+                   
+                   
+                 )
+               ),
+               hr(),
+               p(em("Developed by"), br(),
+                 a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
+                 style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
+               )
+      ),
+
+
+      #-------------------------------------------------------------------------------
+      #----------------------Renewal Contract Premium Calculate-----------------------
+      #-------------------------------------------------------------------------------
+
+      tabPanel("Renewal Contract Premium Calculate",
+        fluid = TRUE, icon = icon("umbrella", verify_fa = FALSE),
+        tags$style(button_color_css),
+        shinythemes::themeSelector(),
+        sidebarLayout(
+          sidebarPanel(
+            h4("", style = "color:deeppink"),
+            br(),
+            fluidRow(
+              column(
+                6,
+                h4("لطفا ابتدا فایل نمونه را دانلود و پر نمایید", style = "font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:left"),
+                downloadButton("downloadPremiumTemplate")
+                
+                
+              ),
+              column(
+                6,
+                fileInput(
+                  "fileCOVERAGES",
+                  h4("بارگذاری فایل نمونه کامل شده", style = "font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:center"),
+                  accept = ".xlsx"
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                6,
+                numericInput(
+                  inputId = "N_person",
+                  label = "تعداد بیمه‌شده‌ها",
+                  min = 5,
+                  max = 1000000,
+                  value = 120,
+                  width = "350px"
+                ),
+                style = "font-family: B Mitra;font-weight: bold;text-align:center"
+              ),
+              column(6,
+                ofset = 2,
+                numericInput(
+                  inputId = "DevCoef",
+                  label = "ضریب توسعه",
+                  min = 1, max = 2, value = round(13 / 11, 2),
+                  width = "350px"
+                ),
+                style = "font-family: B Mitra;font-weight: bold;text-align:center"
+              ),
+              column(12,
+                ofset = 2,
+                sliderInput(
+                  inputId = "Interest",
+                  label = "نرخ بهره",
+                  min = .01, max = .99, value = .12, step = .01,
+                  width = "650px"
+                )
+              ),
+              column(6,
+                ofset = 2,
+                selectInput(
+                  inputId = "ProvinceDis",
+                  label = "استان",
+                  choices = PROVINCE$province,
+                  selected = PROVINCE$province[26]
+                ),
+                style = "font-family: B Mitra;font-weight: bold;text-align:center"
+              ),
+              column(6,
+                ofset = 2,
+                selectInput(
+                  inputId = "JobDis",
+                  label = "گروه شغلی",
+                  choices = JOBGROUP$JOB_GROUP,
+                  selected = JOBGROUP$JOB_GROUP[2]
+                ),
+                style = "font-family: B Mitra;font-weight: bold;text-align:center"
+              ),
+              column(12,
+                ofset = 2,
+                sliderInput(
+                  inputId = "DiscountRate",
+                  label = "تخفیف نهایی",
+                  min = 0, max = .50, value = 0, step = .01,
+                  width = "650px"
+                ),
+                style = "font-family: B Mitra;font-weight: bold;text-align:center"
+              ),
+              column(
+                9,
+                actionButton("run_PremiumCalc", "apply", class = "btn-info")
+              ),
+              column(
+                12,
+                style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
+                withSpinner(dataTableOutput(outputId = "Yearly_Premium_Data"))
+              )
+            )
+          ),
+          mainPanel(
+            hr(),
+            column(
+              12,
+              withSpinner(dataTableOutput(outputId = "Premium_Cove_Data")),
+              style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
+            )
+          )
+        ),
+        hr(),
+        p(em("Developed by"), br(),
+          a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
+          style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
+        )
+      ),
+      #-------------------------------------------------------------------------------
+      #-------------------------------------------------------------------------------
+      #-------------------------------------------------------------------------------
+
+      tabPanel("Claims Reserving",
+        fluid = TRUE, icon = icon("calendar", verify_fa = FALSE),
+        tags$style(button_color_css),
+        shinythemes::themeSelector(),
+        sidebarLayout(
+          sidebarPanel(
+            h4("", style = "color:deeppink"),
+            br(),
+            fluidRow(
+              column(
+                6,
+                h4("لطفا ابتدا فایل نمونه را دانلود و پر نمایید", style = "font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:left"),
+                downloadButton("downloadIBNRTemplate")
+              ),
+              column(
+                6,
+                fileInput(
+                  "fileIBNR",
+                  h4("بارگذاری فایل نمونه کامل شده", style = "font-family: B Mitra;font-weight: bold;font-size: 15px;text-align:center"),
+                  accept = ".xlsx"
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                6,
+                h2("مدل", style = "font-family: B Mitra;font-weight: bold;font-size: 20px;text-align:left"),
+                
+                selectInput(
+                  inputId = "IBNR_Method",
+                  label = "",
+                  choices = c("Mack", "log-linear", "Random Forest"),
+                  selected = "Mack",
+                  width = "350px"
+                )
+               
+              ),
+              column(
+                9,
+                actionButton("run_IBNR", "apply", class = "btn-info")
+              )
+            )
+          ),
+          mainPanel(
+            hr(),
+            column(
+              12,
+              withSpinner(dataTableOutput(outputId = "Full_Triangle")),
+              style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
+            )
+          )
+        ),
+        column(
+          12,
+          withSpinner(plotOutput(outputId = "Plot_Full_Triangle")),
+          style = "font-family: B Mitra;font-size: 15px;font-weight: bold",
+        ),
+        hr(),
+        p(em("Developed by"), br(),
+          a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
+          style = "text-align:center;color:turquoise; font-size: 20px; font-family: times"
+        )
+      ),
+
+
+
+
+      #-------------------------------------------------------------------------------
+      #-------------------------------------------------------------------------------
+      #-------------------------------------------------------------------------------
+
+      # tabPanel("Other Apps",
+      #          fluid = TRUE, icon = icon("tachometer", verify_fa = FALSE),
+      #          tags$style(button_color_css),
+      #          br(),
+      #          br(),
+      #          br(),
+      #          fluidRow(
+      #              column(
+      #                  width = 4,
+      #                  p("(ط¯ط§ط´ط¨ظˆط±ط¯ ظ…ط¯ظ„â€Œظ‡ط§غŒ غŒط§ط¯ع¯غŒط±غŒ ظ…ط§ط´غŒظ†(ظ‡ظˆط´ ظ…طµظ†ظˆط¹غŒ", br(),
+      #                    actionButton(
+      #                        inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
+      #                        icon = icon("brain"),
+      #                        onclick = "window.open('https://budgetrealizationdayinsurance.shinyapps.io/Model_Predictive/', '_blank')"
+      #                    ),
+      #                    style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:turquoise;padding:15px;border-radius:10px"
+      #                  )
+      #              ),
+      #              column(
+      #                  width = 4,
+      #                  p("ط¯ط§ط´ط¨ظˆط±ط¯ طھط­ظ‚ظ‚ ط¨ظˆط¯ط¬ظ‡", br(),
+      #                    actionButton(
+      #                        inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
+      #                        icon = icon("coins"),
+      #                        onclick = "window.open('https://gitypardazesh.shinyapps.io/Gity_Budget_Dashboard/', '_blank')"
+      #                    ),
+      #                    style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:thistle;padding:15px;border-radius:10px"
+      #                  )
+      #              ),
+      #              column(
+      #                  width = 4,
+      #                  p("ط¯ط§ط´ط¨ظˆط±ط¯ ظ…ط­ط§ط³ط¨ظ‡ ط­ظ‚ ط¨غŒظ…ظ‡ ط¯ط±ظ…ط§ظ† ط³ط§ط²ظ…ط§ظ† ط®ط¯ظ…ط§طھغŒ", br(),
+      #                    actionButton(
+      #                        inputId = "ab1", label = "ع©ظ„غŒع© ع©ظ†غŒط¯",
+      #                        icon = icon("hospital-user"),
+      #                        onclick = "window.open('https://abbasdidar5017.shinyapps.io/RATING_DASHBOARD3/', '_blank')"
+      #                    ),
+      #                    style = "font-size: 25px;text-align:center;font-family: B Mitra;color:black;background-color:turquoise;padding:15px;border-radius:10px"
+      #                  )
+      #              )
+      #          ),
+      #          hr(),
+      #          p(em("Developed by"), br(),
+      #            a(href = "https://www.linkedin.com/in/abbasdidar", "Abbas Didar", target = "_blank"),
+      #            style = "text-align:center; color:turquoise; font-size: 20px; font-family: times"
+      #          )
+      # )
+    )
+  )
 )
